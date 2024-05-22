@@ -11,11 +11,34 @@ const app = express();
 // You have been given a numberOfRequestsForUser object to start off with which
 // clears every one second
 
+
+// Maintain an object records for each user and get cleared after every 1s
 let numberOfRequestsForUser = {};
 setInterval(() => {
     numberOfRequestsForUser = {};
 }, 1000)
-
+function rateLimiter(req, res, next){
+  // Firstly, extract the userID
+  const userId = req.headers["user-Id"];
+  // Now,check if the user entry exits?
+  if(numberOfRequestsForUser[userId]){
+    numberOfRequestsForUser[userId]++;
+    if(numberOfRequestsForUser[userId]>5){
+      res.status(404).json({
+        msg: "Too Request. rate limited."
+      })
+    }
+    else{
+      next();
+    }
+  }
+  // if doesnt exist, initialise the object
+  else{
+    numberOfRequestsForUser[userId] = 1;
+    next();
+  }
+}
+app.use(rateLimiter);
 app.get('/user', function(req, res) {
   res.status(200).json({ name: 'john' });
 });
